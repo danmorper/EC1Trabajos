@@ -44,9 +44,9 @@ method_I <- function(X,k) {
 }
 
 
-method_II <- function(X, h) {
-  h <- density(X,bw="SJ")$bw
-  return(h)
+method_II <- function(X) {
+  SJ <- density(X,bw="SJ")
+  return(SJ)
 }
 ```
 
@@ -54,7 +54,7 @@ Realizamos las simulaciones:
 ```{r}
 # Realizamos las simulaciones ----
 results <- data.frame(dato=c(), metodo = c(), tamaño = c(), parametro = c())
-cont = 0
+#cont = 0 lo usé para comprobar si me estaba corriendo el código
 for (n in ns) {
   for (i in 1:M) {
     # Generamos la muestra X
@@ -74,18 +74,17 @@ for (n in ns) {
     
     
     # Calculamos la densidad estimada con el método II
-    for (h in c(15,30,60)) {
-      h_II <- method_II(X,h)
-      # Guardamos los resultados
-      n_metodo <- length(h_II)
-      esta_vuelta <- data.frame(dato = h_II, metodo = rep(2,n_metodo), tamaño = rep(n, n_metodo), parametro = rep(h, n_metodo))
-      results <- rbind(results, esta_vuelta)
-    }
+    h_II <- method_II(X)
+    # Guardamos los resultados
+    n_metodo <- length(h_II$y)
+    esta_vuelta <- data.frame(dato = h_II$y, metodo = rep(2,n_metodo), tamaño = rep(n, n_metodo), parametro = rep("SJ", n_metodo))
+    results <- rbind(results, esta_vuelta)
     
-    cont=cont + 1
-    print(cont)
+#    cont=cont + 1
+#    print(cont)
   }
 }
+head(results)
 ```
 
 # Escoger método según error cuadrático medio
@@ -116,7 +115,21 @@ min_mse_row <- mse[which.min(mse$ECM), ];min_mse_row
 ```
 
 ```{r}
-fx <- subset(results, metodo ==2 & tamaño ==100 & parametro == 15)$dato
-plot(grid,fx,type="l")
+n <- min_mse_row$tamaño
+X <- 0.5*rnorm(n, mean = -1.5) + 0.5*rnorm(n, mean = 1.5)
+mejor_modelo <- method_II(X)
+plot(x = mejor_modelo$x, y = mejor_modelo$y,type="l", xlab = "x", ylab = "y")
+lines(grid,real_dens(grid),col="red",lwd=2)
+```
+```{r}
+mse_k <- subset(mse, metodo ==1);mse_k
+min_mse_row_k <- mse_k[which.min(mse_k$ECM), ];min_mse_row_k
+```
+
+```{r}
+n <- min_mse_row_k$tamaño
+X <- 0.5*rnorm(n, mean = -1.5) + 0.5*rnorm(n, mean = 1.5)
+mejor_modelo_k <- method_I(X,min_mse_row_k$parametro);mejor_modelo_k
+plot(seq(-5,5, length= length(mejor_modelo_k)), y = mejor_modelo_k,type="l", xlab = "x", ylab = "y")
 lines(grid,real_dens(grid),col="red",lwd=2)
 ```

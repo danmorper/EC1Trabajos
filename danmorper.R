@@ -25,12 +25,12 @@ method_I <- function(X,k) {
 # Ancho de banda Sheather-Jones y kernel gaussiano
 method_II <- function(X) {
   rejilla <- density(X, bw="SJ", kernel = "gaussian", from = grid_min, to = grid_max, n = n_grid)
-  return(SJ)
+  return(rejilla)
 }
 
 
 # Realizamos las simulaciones ----
-results <- data.frame(dato=c(), metodo = c(), tamaño = c(), parametro = c())
+results <- data.frame(dato=c(), metodo = c(), tamaño = c(), h = c())
 cont = 0
 for (n in ns) {
   for (i in 1:M) {
@@ -41,7 +41,7 @@ for (n in ns) {
     for (k in c(15,30,50)) {
       h_I <- method_I(X, k)
       # Guardamos los resultados
-      esta_vuelta <- data.frame(dato = h_I$y, metodo = rep(1,n_grid), tamaño = rep(n, n_grid), parametro = rep(k, n_grid))
+      esta_vuelta <- data.frame(dato = h_I$y, metodo = rep(1,n_grid), tamaño = rep(n, n_grid), h = rep(k, n_grid))
       results <- rbind(results, esta_vuelta)
     }
     
@@ -49,7 +49,7 @@ for (n in ns) {
     # Calculamos la densidad estimada con el método II
       h_II <- method_II(X)
       # Guardamos los resultados
-      esta_vuelta <- data.frame(dato = h_II$y, metodo = rep(2,n_grid), tamaño = rep(n, n_grid), parametro = rep(h, n_grid))
+      esta_vuelta <- data.frame(dato = h_II$y, metodo = rep(2,n_grid), tamaño = rep(n, n_grid), h = rep("SJ", n_grid))
       results <- rbind(results, esta_vuelta)
     
     cont=cont + 1
@@ -67,17 +67,18 @@ MSE_aggregate <- function(dens_estimada) {
   mse <- return(MSE(dens_estimada, dens_real, grid))
 }
 
-mse <- aggregate(results$dato, by = list(results$metodo, results$tamaño, results$parametro), FUN = MSE_aggregate)
-names(mse) <- c("metodo", "tamaño", "parametro", "ECM")
+mse <- aggregate(results$dato, by = list(results$metodo, results$tamaño, results$h), FUN = MSE_aggregate)
+names(mse) <- c("metodo", "tamaño", "h", "ECM")
 
 # Compute the configuration with minimum average MSE
 min_mse_row <- mse[which.min(mse$ECM), ];min_mse_row
 
-solouno <- subset(results, metodo ==1 & tamaño ==50 & parametro == 50)
-plot(seq(grid_min,grid_max, length = n_grid), solouno$dato, type = "l")
+solouno <- subset(results, metodo == 1 & tamaño == min_mse_row$tamaño & h == min_mse_row$h) # Tiene n_grid*M observaciones
+solouno <- solouno[1:n_grid,]
+plot(seq(grid_min,grid_max, length = n_grid), solouno$dato, type = "l", xlab = "x", ylab = "y")
 curve(real_dens,grid_min,grid_max, add = TRUE)
 
-solouno <- subset(results, metodo ==2 & tamaño ==50 & parametro == 50)
-plot(seq(grid_min,grid_max, length = n_grid), solouno$dato, type = "l")
+solouno <- filter(results,metodo == 2, tamaño == 100, h == "SJ")
+solouno <- solouno[1:n_grid,]
+plot(seq(grid_min,grid_max, length = length(solouno$dato)), solouno$dato, type = "l", xlab = "x", ylab = "y")
 curve(real_dens,grid_min,grid_max, add = TRUE)
-# Miro el de 15
