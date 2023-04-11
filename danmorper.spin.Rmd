@@ -1,3 +1,5 @@
+
+```{r }
 library(KernSmooth)
 library(dplyr)
 library(magrittr)
@@ -83,3 +85,13 @@ solouno <- filter(results,metodo == 2, tamaño == 100, h == "SJ")
 solouno <- solouno[1:n_grid,]
 plot(seq(grid_min,grid_max, length = length(solouno$dato)), solouno$dato, type = "l", xlab = "x", ylab = "y")
 curve(real_dens,grid_min,grid_max, add = TRUE)
+```
+
+
+
+---
+title: danmorper.R
+author: dankd
+date: '2023-04-11'
+
+---

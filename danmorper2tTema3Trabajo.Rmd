@@ -9,6 +9,7 @@ output: html_document
 Cargamos librerías
 ```{r}
 library(KernSmooth)
+library(dplyr)
 ```
 
 Definimos la función de densidad real, rejilla de valores representativos de la v.a. Z y número de muestras y los tamaños de muestra
@@ -19,71 +20,62 @@ real_dens <- function(x) {
 }
 
 # Creamos la rejilla de valores representativos de la v.a. Z
-grid_size <- 512
-grid_min <- -5
-grid_max <- 5
-grid <- seq(grid_min, grid_max, length = grid_size)
-
-# Definimos el número de muestras y los tamaños de muestra
 M <- 1000
 ns <- c(50, 100)
+grid_min <- -4
+grid_max <- 4
+n_grid <- 512
+grid <- seq(grid_min, grid_max, length = n_grid)
 ```
 
 # Métodos y simulación
 Definimos los métodos. He escogido el método de los k vecinos más cercanos y el método de Sheather-Jones 
 ```{r}
+# Definimos los métodos I y II
 method_I <- function(X,k) {
-  dk=numeric(grid_size)
-  for (i in 1:grid_size)
-  {
-    distancias=abs(grid[i]-X)
-    dk[i]=distancias[which(rank(distancias)==k)]
-  }
-  fx=(k-1)/(2*n*dk)
-  return(fx)
+  h <- sort(abs(grid-X))[k]
+  rejilla <- density(X, bw = h, kernel = "gaussian", from = grid_min, to = grid_max, n = n_grid)
+  return(rejilla)
+  
 }
 
-
+# Ancho de banda Sheather-Jones y kernel gaussiano
 method_II <- function(X) {
-  SJ <- density(X,bw="SJ")
-  return(SJ)
+  rejilla <- density(X, bw="SJ", kernel = "gaussian", from = grid_min, to = grid_max, n = n_grid)
+  return(rejilla)
 }
 ```
 
 Realizamos las simulaciones:
-```{r}
+```{r, warning=FALSE}
 # Realizamos las simulaciones ----
-results <- data.frame(dato=c(), metodo = c(), tamaño = c(), parametro = c())
-#cont = 0 lo usé para comprobar si me estaba corriendo el código
+results <- data.frame(dato=c(), metodo = c(), tamaño = c(), h = c())
+#cont = 0 para ver si funciona
 for (n in ns) {
   for (i in 1:M) {
     # Generamos la muestra X
     X <- 0.5*rnorm(n, mean = -1.5) + 0.5*rnorm(n, mean = 1.5)
     
-    # Calculamos la densidad real
-    real_density <- real_dens(grid)
-    
-    # Calculamos la densidad estimada con el método I
+    # Calculamos la densidad estimada con el método I con diferentes k
     for (k in c(15,30,50)) {
       h_I <- method_I(X, k)
       # Guardamos los resultados
-      n_metodo <- length(h_I)
-      esta_vuelta <- data.frame(dato = h_I, metodo = rep(1,n_metodo), tamaño = rep(n, n_metodo), parametro = rep(k, n_metodo))
+      esta_vuelta <- data.frame(dato = h_I$y, metodo = rep(1,n_grid), tamaño = rep(n, n_grid), h = rep(k, n_grid))
       results <- rbind(results, esta_vuelta)
     }
     
     
     # Calculamos la densidad estimada con el método II
-    h_II <- method_II(X)
-    # Guardamos los resultados
-    n_metodo <- length(h_II$y)
-    esta_vuelta <- data.frame(dato = h_II$y, metodo = rep(2,n_metodo), tamaño = rep(n, n_metodo), parametro = rep("SJ", n_metodo))
-    results <- rbind(results, esta_vuelta)
+      h_II <- method_II(X)
+      # Guardamos los resultados
+      esta_vuelta <- data.frame(dato = h_II$y, metodo = rep(2,n_grid), tamaño = rep(n, n_grid), h = rep("SJ", n_grid))
+      results <- rbind(results, esta_vuelta)
     
 #    cont=cont + 1
 #    print(cont)
   }
 }
+results[, -1] <- apply(results[, -1], 2, as.factor)
 head(results)
 ```
 
@@ -91,7 +83,7 @@ head(results)
 Calculamos los errores cuadráticos medios para los distintos modelo y distintos tamaños. 
 
 ```{r}
-#Función para calcular ECM
+#Formula ECM
 MSE <- function(dens_estimada, dens_real, grid) {
   mse <- sum((dens_estimada - dens_real)^2 * (grid[2]-grid[1]))
   return(mse)
@@ -104,8 +96,8 @@ MSE_aggregate <- function(dens_estimada) {
 }
 
 #Dataframe con los ECM
-mse <- aggregate(results$dato, by = list(results$metodo, results$tamaño, results$parametro), FUN = MSE_aggregate)
-names(mse) <- c("metodo", "tamaño", "parametro", "ECM")
+mse <- aggregate(results$dato, by = list(results$metodo, results$tamaño, results$h), FUN = MSE_aggregate)
+names(mse) <- c("metodo", "tamaño", "h", "ECM")
 mse
 ```
 
@@ -114,22 +106,18 @@ Veo cuál es el método y tamaño que minimiza el error cuadrático medio
 min_mse_row <- mse[which.min(mse$ECM), ];min_mse_row
 ```
 
+Hago el plot del método escogiendo un de las muestras como ejemplo
 ```{r}
-n <- min_mse_row$tamaño
-X <- 0.5*rnorm(n, mean = -1.5) + 0.5*rnorm(n, mean = 1.5)
-mejor_modelo <- method_II(X)
-plot(x = mejor_modelo$x, y = mejor_modelo$y,type="l", xlab = "x", ylab = "y")
-lines(grid,real_dens(grid),col="red",lwd=2)
-```
-```{r}
-mse_k <- subset(mse, metodo ==1);mse_k
-min_mse_row_k <- mse_k[which.min(mse_k$ECM), ];min_mse_row_k
+solouno <- subset(results, metodo == 1 & tamaño == min_mse_row$tamaño & h == min_mse_row$h) # Tiene n_grid*M observaciones
+solouno <- solouno[1:n_grid,]
+plot(seq(grid_min,grid_max, length = n_grid), solouno$dato, type = "l", xlab = "x", ylab = "y")
+curve(real_dens,grid_min,grid_max, add = TRUE)
 ```
 
+Veo también el otro método para ver cómo ha quedado
 ```{r}
-n <- min_mse_row_k$tamaño
-X <- 0.5*rnorm(n, mean = -1.5) + 0.5*rnorm(n, mean = 1.5)
-mejor_modelo_k <- method_I(X,min_mse_row_k$parametro);mejor_modelo_k
-plot(seq(-5,5, length= length(mejor_modelo_k)), y = mejor_modelo_k,type="l", xlab = "x", ylab = "y")
-lines(grid,real_dens(grid),col="red",lwd=2)
+solouno <- filter(results,metodo == 2, tamaño == 100, h == "SJ")
+solouno <- solouno[1:n_grid,]
+plot(seq(grid_min,grid_max, length = length(solouno$dato)), solouno$dato, type = "l", xlab = "x", ylab = "y")
+curve(real_dens,grid_min,grid_max, add = TRUE)
 ```
