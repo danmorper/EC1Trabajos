@@ -1,0 +1,282 @@
+---
+title: "danmorper2TrabajoTema3"
+author: "DanielMorenoPerez"
+date: "2023-04-10"
+output: html_document
+---
+
+# Librerías, y definiciones previas
+Cargamos librerías
+```{r, warning=FALSE, message=FALSE}
+library(KernSmooth)
+library(dplyr)
+```
+
+Definimos la función de densidad real, rejilla de valores representativos de la v.a. Z y número de muestras y los tamaños de muestra
+```{r}
+# Función densidad real
+real_dens <- function(x) {
+  0.5 * dnorm(x, mean = -1.5) + 0.5 * dnorm(x, mean = 1.5)
+}
+
+# Creamos la rejilla de valores representativos de la v.a. Z
+M <- 1000
+rejilla_min <- -4.5
+rejilla_max <- 4.5
+n_rejilla <- 512
+rejilla <- seq(rejilla_min, rejilla_max, length = n_rejilla)
+densidad_real <- real_dens(rejilla)
+```
+
+# Métodos y simulación
+Definimos los métodos. He escogido el método de los k vecinos más cercanos y el método de Sheather-Jones 
+```{r}
+# Definimos los métodos I y II
+h_I = "bcv"
+
+h_II = "SJ"
+```
+
+# n = 50
+
+```{r}
+n <- 50
+```
+## Método 1
+Realizamos las simulaciones:
+```{r, warning=FALSE}
+# Realizamos las simulaciones
+results_I_50 <- matrix(data = numeric(n_rejilla*M), ncol = n_rejilla, nrow = M)
+cont = 0 # para ver si funciona, debe llegar hasta 2000 (ns*M)
+for (i in 1:M) {
+  # Generamos la muestra X
+  elegir_var <- rbinom(n = n, size = 1, prob = 0.5)
+  X <- elegir_var*rnorm(n, mean = -1.5) + (1-elegir_var)*rnorm(n, mean = 1.5) # Corrijo toma de muestra
+    
+  # Calculamos la densidad estimada con el método I
+  estimacion <- density(X, bw = h_I, kernel = "gaussian", from = rejilla_min, to = rejilla_max, n = n_rejilla)
+    
+  # Guardamos resultados
+  results_I_50[i,] <- estimacion$y
+    
+  #cont = cont + 1
+  #print(cont)
+}
+results_I_50[1:10,1:12]
+```
+
+### ECM, sesgo y varianza
+```{r}
+# Calculo correctamente ECM, sesgo y varianza
+sesgo_I_50 <- colMeans(results_I_50) - densidad_real
+varianza_I_50 <- apply(results_I_50, 2, var)
+ECM_I_50 <- varianza_I_50 + sesgo_I_50^2
+ECM_I_50_est <- mean(varianza_I_50 + sesgo_I_50^2)
+```
+
+Cada elemento del vector sesgo es el sesgo al estimar un valor de la densidad en la rejilla
+
+## Método 2
+```{r}
+# Realizamos las simulaciones
+results_II_50 <- matrix(data = numeric(n_rejilla*M), ncol = n_rejilla, nrow = M)
+cont = 0 # para ver si funciona, debe llegar hasta 2000 (ns*M)
+for (i in 1:M) {
+  # Generamos la muestra X
+  elegir_var <- rbinom(n = n, size = 1, prob = 0.5)
+  X <- elegir_var*rnorm(n, mean = -1.5) + (1-elegir_var)*rnorm(n, mean = 1.5)
+    
+  # Calculamos la densidad estimada con el método I
+  estimacion <- density(X, bw = h_II, kernel = "gaussian", from = rejilla_min, to = rejilla_max, n = n_rejilla)
+    
+  # Guardamos resultados
+  results_II_50[i,] <- estimacion$y
+    
+  #cont = cont + 1
+  #print(cont)
+  }
+results_II_50[1:10,1:12]
+```
+
+### ECM, sesgo y varianza
+```{r}
+sesgo_II_50 <- colMeans(results_II_50) - densidad_real
+varianza_II_50 <- apply(results_II_50, 2, var)
+ECM_II_50 <- varianza_II_50 + sesgo_II_50^2
+ECM_II_50_est <- mean(ECM_II_50)
+```
+
+# n = 100
+```{r}
+n <- 100
+```
+## Metodo 1
+
+Realizamos las simulaciones:
+```{r, warning=FALSE}
+# Realizamos las simulaciones
+results_I_100 <- matrix(data = numeric(n_rejilla*M), ncol = n_rejilla, nrow = M)
+cont = 0 # para ver si funciona, debe llegar hasta 2000 (ns*M)
+for (i in 1:M) {
+  # Generamos la muestra X
+  elegir_var <- rbinom(n = n, size = 1, prob = 0.5)
+  X <- elegir_var*rnorm(n, mean = -1.5) + (1-elegir_var)*rnorm(n, mean = 1.5)
+    
+  # Calculamos la densidad estimada con el método I
+  estimacion <- density(X, bw = h_I, kernel = "gaussian", from = rejilla_min, to = rejilla_max, n = n_rejilla)
+    
+  # Guardamos resultados
+  results_I_100[i,] <- estimacion$y
+    
+  #cont = cont + 1
+  #print(cont)
+  }
+results_I_100[1:10,1:12]
+```
+
+### ECM, sesgo y varianza
+```{r}
+sesgo_I_100 <- colMeans(results_I_100) - densidad_real
+varianza_I_100 <- apply(results_I_100, 2, var)
+ECM_I_100 <- varianza_I_100 + sesgo_I_100^2
+ECM_I_100_est <- mean(ECM_I_100)
+```
+
+## Método 2
+
+```{r}
+# Realizamos las simulaciones ----
+results_II_100 <- matrix(data = numeric(n_rejilla*M), ncol = n_rejilla, nrow = M)
+cont = 0 # para ver si funciona, debe llegar hasta 2000 (ns*M)
+for (i in 1:M) {
+  # Generamos la muestra X
+  elegir_var <- rbinom(n = n, size = 1, prob = 0.5)
+  X <- elegir_var*rnorm(n, mean = -1.5) + (1-elegir_var)*rnorm(n, mean = 1.5)
+    
+  # Calculamos la densidad estimada con el método I
+  estimacion <- density(X, bw = h_II, kernel = "gaussian", from = rejilla_min, to = rejilla_max, n = n_rejilla)
+    
+  # Guardamos resultados
+  results_II_100[i,] <- estimacion$y
+    
+  #cont = cont + 1
+  #print(cont)
+  }
+results_II_100[1:10,1:12]
+```
+
+### ECM, sesgo y varianza
+```{r}
+sesgo_II_100 <- colMeans(results_II_100) - densidad_real
+varianza_II_100 <- apply(results_II_100, 2, var)
+ECM_II_100 <- varianza_II_100 + sesgo_II_100^2
+ECM_II_100_est <- mean(ECM_II_100)
+```
+
+
+
+# ¿Diferencias significativa de ECM entre distintos métodos?
+
+## n = 50
+
+Estudio descripitvo
+```{r}
+boxplot(ECM_I_50, ECM_II_50)
+summary(data_frame(ECM_I_50, ECM_II_50))
+```
+
+Boxplots algo disintos, pero nada especialmente relevante.
+
+### Estudio inferencial
+```{r}
+shapiro.test(ECM_I_50)
+shapiro.test(ECM_II_50)
+```
+Ambos pvalores menores que 0.05, luego rechazo normalidad
+
+Hago el test no paramétrico de wilcoxon.
+```{r}
+wilcox.test(ECM_I_50, ECM_II_50)
+```
+
+Concluyo que ECM cambia según el método utilizado
+
+
+## n = 100
+
+### Estudio descripitvo
+```{r}
+boxplot(ECM_I_100, ECM_II_100)
+summary(data_frame(ECM_I_100, ECM_II_100))
+```
+Se puedo apreciar en en los boxplots que son ligeramente distintos, pero nada concluyente
+
+### Estudio inferencial
+```{r}
+shapiro.test(ECM_I_100)
+shapiro.test(ECM_II_100)
+```
+Ambos pvalores menores que 0.05, luego rechazo normalidad
+
+Hago el test no paramétrico de wilcoxon.
+```{r}
+wilcox.test(ECM_I_100, ECM_II_100)
+```
+
+Concluyo que ECM cambia según el método utilizado
+
+
+
+# Fijo método 1, ¿diferencias entre distintos n?
+
+## Estudio descriptivo
+
+```{r}
+boxplot(ECM_I_50, ECM_I_100)
+summary(data_frame(ECM_I_50, ECM_I_100))
+```
+Se puedo apreciar en en los boxplots que son ligeramente distintos, pero nada concluyente
+
+## Estudio inferencial
+```{r}
+shapiro.test(ECM_I_50)
+shapiro.test(ECM_I_100)
+```
+Ambos pvalores menores que 0.05, luego rechazo normalidad
+
+Hago el test no paramétrico de wilcoxon.
+```{r}
+wilcox.test(ECM_I_50, ECM_I_100)
+```
+
+
+Existen diferencias en ECM entre los distintos n fijando el método 1.
+
+
+
+```{r}
+plot(rejilla, colMeans(results_I_50), ylim = c(0, 0.20),  type = "l", col = "blue")
+curve(real_dens, from = rejilla_min, to = rejilla_max, add = TRUE)
+```
+
+
+
+```{r}
+plot(rejilla, colMeans(results_II_50), ylim = c(0, 0.20),  type = "l", col = "blue")
+curve(real_dens, from = rejilla_min, to = rejilla_max, add = TRUE)
+```
+
+
+
+
+```{r}
+plot(rejilla, colMeans(results_I_100), ylim = c(0, 0.20),  type = "l", col = "blue")
+curve(real_dens, from = rejilla_min, to = rejilla_max, add = TRUE)
+```
+
+
+```{r}
+plot(rejilla, colMeans(results_II_100), ylim = c(0, 0.20),  type = "l", col = "blue")
+curve(real_dens, from = rejilla_min, to = rejilla_max, add = TRUE)
+```
+
