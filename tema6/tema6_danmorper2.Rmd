@@ -1,10 +1,19 @@
-# Daniel José Moreno Pérez
+---
+title: "danmorper2Tema6"
+author: "DanielMorenoPérez"
+date: "2023-05-26"
+output: html_document
+---
+Importamos librerias
+
+```{r, message=FALSE, warning=FALSE}
 library(randtoolbox) 
 library(tseries)
+```
 
-# Apartado1 ----
-
-## Paso 1: Generar una muestra de la distribución Beta(a, b)----
+# Ejercicio 1
+Definir la función para el algoritmo descrito en el enunciado
+```{r}
 generar_muestra_beta <- function(a, b, n) {
   alpha <- a + b #a,b debe ser mayor que 0, no impongo la condición (sería un if) para no hacer el código más difícil de leer
   if (min(a, b) <= 1) {
@@ -27,48 +36,69 @@ generar_muestra_beta <- function(a, b, n) {
         break
       }
       #print(i)
-    }
+      }
     i<-i+1
   }
   
   return(muestra)
 }
+```
 
-# Apartado2 ----
-## Paso 2: Generar una muestra de tamaño 1000 de la distribución Beta(3, 2)----
+# Ejercicio 2
+
+Generar una muestra de tamaño 1000 de la distribución Beta(3, 2)
+
+```{r}
 set.seed(89889)  # Inicializar la semilla con las últimas 5 cifras del DNI
 muestra <- generar_muestra_beta(3, 2, 1000)
+```
 
-## Calcular la media y varianza muestral----
+Calcular la media y varianza muestral
+```{r}
 media_muestral <- mean(muestra)
 varianza_muestral <- var(muestra)
+```
 
-## Calcular la media y varianza poblacional ----
+Calcular la media y varianza poblacional
+
+```{r}
 media_poblacional <- 3 / (3 + 2)
 varianza_poblacional <- (3 * 2) / ((3 + 2)^2 * (3 + 2 + 1))
+```
 
-## Comparar los resultados ----
+Comparar los resultados
+
+```{r}
 cat("Media muestral:", media_muestral, "\n")
 cat("Media poblacional:", media_poblacional, "\n")
 cat("Varianza muestral:", varianza_muestral, "\n")
 cat("Varianza poblacional:", varianza_poblacional, "\n")
+```
 
-#Apartado3 ----
-## Paso 3: Graficar histograma y densidad de la distribución Beta(3, 2)----
+Graficar histograma y densidad de la distribución Beta(3, 2)
+
+```{r}
 hist(muestra, freq = FALSE, main = "Histograma de la muestra", ylim = c(0,2))
 curve(dbeta(x, 3, 2), add = TRUE, col = "blue", lwd = 2, n = 1000, xlab = "x", ylab = "Densidad")
+```
 
+# Test de rachas
 
-# Apartado4 ----
+Aplicar un test de rachas a la muestra
 
-#Aplicar un test de rachas a la muestra
+```{r}
 mediana_muestral <- median(muestra)
 runs.test(factor(muestra>media_muestral))
-# pvalor mayor que 0.05 -> La muestra generada es aleatoria
+```
 
-# Apartado5 ----
+El pvalor es mayor que 0.05, luego no concluimos que la muestra generada es aleatoria
 
-# Paso 5: Aplicar la función contrastes_aleato
+
+# Ejercicio 5
+
+Aplicar la función contrastes_aleato a la muestra generada
+
+```{r}
 contrastes_aleato<-function(x,titulo)
 {
   print(titulo)
@@ -81,14 +111,18 @@ contrastes_aleato<-function(x,titulo)
   print(runs.test(factor(x>0.5)))
   acf(x,main=titulo)
 }
+```
 
-# Aplicar la función contrastes_aleato a la muestra generada
 
+```{r}
 contrastes_aleato(muestra, "Contrastes aleatorios (Beta(3,2))")
-# las autocorrelaciones están cerca de 0 (ninguna significativa, la primera no se tiene en cuenta)
+```
 
-# Apartado6 ----
-# Repetir los pasos 2, 3, 4 y 5 con a = 0.5 y b = 2
+# Apartado6
+
+Repetir los pasos 2, 3, 4 y 5 con a = 0.5 y b = 2
+
+```{r}
 muestra_repetida <- generar_muestra_beta(0.5, 2, 1000)
 
 media_muestral_repetida <- mean(muestra_repetida)
@@ -106,7 +140,16 @@ curve(dbeta(x, 0.5, 2), add = TRUE, col = "blue", lwd = 2, n = 1000, xlab = "x",
 
 mediana_muestral_repetida <- median(muestra_repetida)
 runs.test(factor(muestra_repetida>mediana_muestral_repetida))
-# pvalor mayor que 0.05 -> La muestra generada es aleatoria
+```
 
+El pvalor es mayor que 0.05, luego concluimos que la muestra generada es aleatoria
+
+
+
+```{r}
 contrastes_aleato(muestra_repetida, "Contrastes aleatorios (Beta(0.5,2))")
-# las autocorrelaciones están cerca de 0 (ninguna significativa, la primera no se tiene en cuenta)
+```
+
+Las autocorrelaciones están cerca de 0, luego ninguna es significativa. Cabe mencionar que la primera no se tiene en cuenta, porque estaríamos viendo la autocorrelación con la misma variable.
+
+
